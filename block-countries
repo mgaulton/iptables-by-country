@@ -10,11 +10,23 @@ function DIE () {
 trap DIE EXIT
 
 chain=block.countries
+rulecheck="`iptables -vnL`"
 
-iptables -t filter -F $chain 2>/dev/null
-iptables -t filter -N $chain 2>/dev/null
-iptables -t raw -F $chain 2>/dev/null
-iptables -t raw -N $chain 2>/dev/null
+
+# Check that a set exists in bash:
+ipset -L block.countries  >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+		ipset create $chain hash:net 
+fi
+
+
+if [[ ! '*--match-set  block.countries*' == rulecheck ]]; then 
+  echo " block.countries rule found"
+else
+  echo " block.countries rule not found"
+	iptables -A INPUT -p tcp -m set --match-set block.countries src -m multiport --dport 22,80,443 -j DROP
+
+fi
 
 zn=0
 sed 's/ *;.*//' < www.spamhaus.org/drop/drop.lasso | grep -v '^$' > drop.lasso.zone
@@ -48,6 +60,7 @@ echo optimizing reduced $zn to $znn: $(( 100 - ( $znn * 100 / $zn ) ))% savings	
 echo '*raw'
 for ip in $(cat zones.$$ )
 do
+	ipset -exist add $chain $ip
 	echo -A $chain -s $ip -j DROP
 	# echo -A $chain -j DROP -s $ip -p tcp --dport 22
 done
@@ -55,10 +68,10 @@ echo COMMIT
 ) | iptables-restore -n
 
 
-if [ $(iptables -t raw -nL PREROUTING | grep -c $chain ) -lt 3 ]
-then
-	for port in $PORTS
-	do
-		iptables -t raw -A PREROUTING -p tcp --dport $port -j $chain
-	done
-fi
+#if [ $(iptables -t raw -nL PREROUTING | grep -c $chain ) -lt 3 ]
+#then
+#	for port in $PORTS
+#	do
+		#iptables -t raw -A PREROUTING -p tcp --dport $port -j $chain
+#	done
+#fi

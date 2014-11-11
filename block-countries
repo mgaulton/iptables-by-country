@@ -20,13 +20,12 @@ if [ $? -ne 0 ]; then
 fi
 
 
-if [[ ! '*match-set blockcountries*' == rulecheck ]]; then 
-  echo " blockcountries rule found"
-else
-  echo " blockcountries rule not found"
+ if [[ '*match-set blockcountries*' == rulecheck ]]; then 
+   echo " blockcountries rule found"
+ else
+   echo " blockcountries rule not found"
 	iptables -A INPUT -p tcp -m set --match-set blockcountries src -m multiport --dport 22,80,443 -j DROP
-
-fi
+ fi
 
 zn=0
 sed 's/ *;.*//' < www.spamhaus.org/drop/drop.lasso | grep -v '^$' > drop.lasso.zone

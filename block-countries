@@ -20,12 +20,13 @@ if [ $? -ne 0 ]; then
 fi
 
 
- if [[ '*match-set blockcountries*' == rulecheck ]]; then 
-   echo " blockcountries rule found"
- else
-   echo " blockcountries rule not found"
-	iptables -A INPUT -p tcp -m set --match-set blockcountries src -m multiport --dport 22,80,443 -j DROP
- fi
+ # if [[ '*match-set blockcountries*' == rulecheck ]]; then 
+ #   echo " blockcountries rule found"
+ # else
+ #   echo " blockcountries rule not found"
+	# iptables -A INPUT -p tcp -m set --match-set blockcountries src -m multiport --dport 22,80,443 -j REJECT
+
+ # fi
 
 zn=0
 sed 's/ *;.*//' < www.spamhaus.org/drop/drop.lasso | grep -v '^$' > drop.lasso.zone
@@ -60,7 +61,7 @@ echo '*raw'
 for ip in $(cat zones.$$ )
 do
 	ipset -exist add blockcountries $ip
-	echo -A $chain -s $ip -j DROP
+	echo -A $chain -s $ip -j REJECT
 	# echo -A $chain -j DROP -s $ip -p tcp --dport 22
 done
 echo COMMIT
